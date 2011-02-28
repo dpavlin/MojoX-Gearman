@@ -88,6 +88,7 @@ sub req {
 		warn "# <<<< ",dump($data);
 		my ($magic, $type, $len) = unpack( "a4NN", $data );
 		die "wrong magic [$magic]" unless $magic eq "\0RES";
+		die "ERROR" if $type == 19;
 		$ret = substr($data,12,$len);
 	};
 
