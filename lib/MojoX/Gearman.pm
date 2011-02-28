@@ -74,7 +74,9 @@ sub connected {
 }
 
 sub req {
-	my ( $self, $type, $data ) = @_;
+	my $self = shift;
+	my $type = shift;
+	my $data = join("\0", @_);
 
 	Mojo::Util::encode($self->encoding, $data) if $self->encoding;
 
@@ -86,12 +88,11 @@ sub req {
 		warn "# <<<< ",dump($data);
 		my ($magic, $type, $len) = unpack( "a4NN", $data );
 		die "wrong magic [$magic]" unless $magic eq "\0RES";
-		$ret = $data;
+		$ret = substr($data,12,$len);
 	};
 
-	$data .= "\x00";
 	my $len = length($data);
-	my $message = pack("a4NN", "\0REQ", 16, length $data ) . $data;
+	my $message = pack("a4NN", "\0REQ", $type, length $data ) . $data;
 	warn "# >>>> ",dump($data);
 
 	my $mqueue = $self->{_message_queue} ||= [];
