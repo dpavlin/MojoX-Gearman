@@ -139,13 +139,13 @@ warn "# WORK_COMPLETE ",dump $data;
 			};
 		} elsif ( $type == $packet_type->{NO_JOB} ) {
 			$self->req( 'PRE_SLEEP' );
+			$self->stop;
 		} elsif ( $type == $packet_type->{JOB_ASSIGN} ) {
 			my ( $handle, $function, $workload ) = @data;
 			my $callback = $self->{_function}->{$function};
 			die "no $function callback" unless ref $callback eq 'CODE';
-			warn "# calling $data callback $callback";
 			my $out = $callback->( $workload );
-			warn "# === ",dump $out;
+			warn "## $data $callback = ", dump $out;
 			$self->req( 'WORK_COMPLETE', $handle, $out );
 			$self->req( 'GRAB_JOB' );
 		} elsif ( $type == $packet_type->{NOOP} ) {
@@ -175,12 +175,11 @@ warn "# WORK_COMPLETE ",dump $data;
 
 	if ( $type eq 'CAN_DO' ) {
 		$self->{_function}->{$data} = $callback;
+		$self->res( $callback );
 		warn "# installed $data callback $callback";
-		$self->req( 'GRAB_JOB' );
+	} elsif ( $type =~ m/^(ECHO_REQ|SUBMIT_JOB|GRAB_JOB)$/ ) { # sync commands
+		$self->start;
 	}
-		
-
-#	$self->start;
 
 	$self->res;
 }
