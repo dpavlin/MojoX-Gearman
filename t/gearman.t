@@ -2,7 +2,7 @@
 use warnings;
 use strict;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Data::Dump qw(dump);
 use lib 'lib';
 
@@ -15,4 +15,6 @@ cmp_ok $echo, 'eq', "foobar";
 
 ok( my $ping = $g->req( 7, 'ping', '', 'bla' ), 'SUBMIT_JOB' );
 diag dump $ping;
+
+ok( $g->req( 16, "alive" ), 'ECHO - still alive - still alive?' );
 
