@@ -14,7 +14,7 @@ use Data::Dump qw(dump);
 require Carp;
 
 __PACKAGE__->attr(server   => '127.0.0.1:4730');
-__PACKAGE__->attr(ioloop   => sub { Mojo::IOLoop->singleton });
+__PACKAGE__->attr(ioloop   => sub { Mojo::IOLoop->new });
 __PACKAGE__->attr(error	=> undef);
 __PACKAGE__->attr(timeout  => 300);
 __PACKAGE__->attr(encoding => 'UTF-8');
@@ -120,7 +120,6 @@ sub req {
 	my $response;
 	my $cb = sub {
 		my ( $self, $data ) = @_;
-		$self->stop;
 		warn "# <<<< ",dump($data);
 		my ( $type, @data ) = $self->parse_packet($data);
 
@@ -133,7 +132,8 @@ warn "# WORK_COMPLETE ",dump $data;
 				$self->res( $out );
 				$self->stop;
 			};
-			$self->start; # FIXME sync client
+		} else {
+			$self->stop;
 		}
 
 		my $out = $#data == 0 ? $data[0] : [ @data ];
@@ -155,21 +155,21 @@ warn "# WORK_COMPLETE ",dump $data;
 	$self->connect unless $self->{_connection};
 	$self->_send_next_message;
 
-	$self->ioloop->start;
+	$self->start;
 
 	$self->res;
 }
 
 sub start {
 	my ($self) = @_;
-
+	warn "# start";
 	$self->ioloop->start;
 	return $self;
 }
 
 sub stop {
 	my ($self) = @_;
-
+	warn "# stop";
 	$self->ioloop->stop;
 	return $self;
 }
