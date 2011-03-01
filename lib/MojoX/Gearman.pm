@@ -137,6 +137,7 @@ warn "# WORK_COMPLETE ",dump $data;
 		$self->res( $#data == 0 ? $data[0] : [ @data ] );
 	};
 
+	$data .= "\0" if $data;
 	my $len = length($data);
 	my $message = pack("a4NN", "\0REQ", $type, length $data ) . $data;
 	warn "# >>>> ",dump($data);
