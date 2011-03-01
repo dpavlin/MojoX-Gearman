@@ -26,6 +26,7 @@ __PACKAGE__->attr(
 		  }
 	}
 );
+__PACKAGE__->attr(res => undef);
 
 sub DESTROY {
 	my $self = shift;
@@ -96,15 +97,6 @@ sub parse_packet {
 	die "unsupported type [$type]" unless exists $nr2type->{$type};
 	die "ERROR" if $type == $packet_type->{ERROR};
 	return ( $type, split("\0", substr($data,12,$len)) );
-}
-
-sub res {
-	my ( $self, $value ) = @_;
-	if ( defined $value ) {
-		warn "# ++ res = ",dump $value;
-		$self->{_res} ||= $value;
-	}
-	return $self->{_res};
 }
 
 sub req {
