@@ -92,6 +92,7 @@ $nr2type->{ $packet_type->{$_} } = $_ foreach keys %$packet_type;
 
 sub parse_packet {
 	my ($self,$data) = @_;
+	die "no data in packet" unless $data;
 	my ($magic, $type, $len) = unpack( "a4NN", $data );
 	die "wrong magic [$magic]" unless $magic eq "\0RES";
 	die "unsupported type [$type]" unless exists $nr2type->{$type};
@@ -112,8 +113,8 @@ sub req {
 	my $response;
 	my $cb = sub {
 		my ( $self, $data ) = @_;
-		warn "# <<<< ",dump($data);
 		my ( $type, @data ) = $self->parse_packet($data);
+		warn "# <<<< ", $nr2type->{$type}, " ",dump(@data);
 
 		if ( $type == $packet_type->{JOB_CREATED} ) {
 			push @{ $self->{_cb_queue} }, sub {
@@ -133,10 +134,10 @@ warn "# WORK_COMPLETE ",dump $data;
 
 	};
 
-	$data .= "\0" if $data;
+#	$data .= "\0" if $data;
 	my $len = length($data);
 	my $message = pack("a4NN", "\0REQ", $packet_type->{$type}, length $data ) . $data;
-	warn "# >>>> ",dump($message);
+	warn "# >>>> $type ",dump($message);
 
 	my $mqueue = $self->{_message_queue} ||= [];
 	my $cqueue = $self->{_cb_queue}	  ||= [];
@@ -188,6 +189,8 @@ sub _on_connect {
 
 sub _on_error {
 	my ($self, $ioloop, $id, $error) = @_;
+
+	warn "ERROR: $error";
 
 	$self->error($error);
 	$self->_inform_queue;
