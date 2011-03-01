@@ -10,11 +10,11 @@ use_ok 'MojoX::Gearman';
 
 my $g = new_ok 'MojoX::Gearman';
 
-ok( my $echo = $g->req( 16, "foobar" ), 'ECHO' );
+ok( my $echo = $g->req( 'ECHO_REQ', "foobar" ), 'ECHO' );
 cmp_ok $echo, 'eq', "foobar";
 
-ok( my $ping = $g->req( 7, 'ping', '', 'bla' ), 'SUBMIT_JOB' );
+ok( my $ping = $g->req( 'SUBMIT_JOB', 'ping', '', 'bla' ), 'SUBMIT_JOB' );
 diag dump $ping;
 
-ok( $g->req( 16, "alive" ), 'ECHO - still alive - still alive?' );
+ok( $g->req( 'ECHO_REQ', "alive" ), 'ECHO - still alive - still alive?' );
 

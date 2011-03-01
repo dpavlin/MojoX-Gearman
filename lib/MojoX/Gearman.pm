@@ -74,6 +74,7 @@ sub connected {
 }
 
 my $packet_type = {
+	SUBMIT_JOB => 7,
 	JOB_CREATED => 8,
 
 	WORK_COMPLETE => 13,
@@ -111,6 +112,7 @@ sub req {
 	my $type = shift;
 	my $data = join("\0", @_);
 
+	die "can't find packet type $type in ", dump $packet_type unless exists $packet_type->{$type};
 	Mojo::Util::encode($self->encoding, $data) if $self->encoding;
 
 	$self->{_res} = undef;
@@ -118,7 +120,7 @@ sub req {
 	my $response;
 	my $cb = sub {
 		my ( $self, $data ) = @_;
-		$self->ioloop->stop;
+		$self->stop;
 		warn "# <<<< ",dump($data);
 		my ( $type, @data ) = $self->parse_packet($data);
 
@@ -126,21 +128,23 @@ sub req {
 			push @{ $self->{_cb_queue} }, sub {
 				my ( $self,$data ) = @_;
 warn "# WORK_COMPLETE ",dump $data;
-				my ( $type, $handle, $ret ) = $self->parse_packet($data);
+				my ( $type, $handle, $out ) = $self->parse_packet($data);
 				die "not WORK_COMPLETE" unless $type == $packet_type->{WORK_COMPLETE};
-				$self->res( $ret );
+				$self->res( $out );
 				$self->stop;
 			};
 			$self->start; # FIXME sync client
 		}
 
-		$self->res( $#data == 0 ? $data[0] : [ @data ] );
+		my $out = $#data == 0 ? $data[0] : [ @data ];
+		$self->res( $out );
+
 	};
 
 	$data .= "\0" if $data;
 	my $len = length($data);
-	my $message = pack("a4NN", "\0REQ", $type, length $data ) . $data;
-	warn "# >>>> ",dump($data);
+	my $message = pack("a4NN", "\0REQ", $packet_type->{$type}, length $data ) . $data;
+	warn "# >>>> ",dump($message);
 
 	my $mqueue = $self->{_message_queue} ||= [];
 	my $cqueue = $self->{_cb_queue}	  ||= [];
@@ -175,8 +179,8 @@ sub _send_next_message {
 
 	if ((my $c = $self->{_connection}) && !$self->{_connecting}) {
 		while (my $message = shift @{$self->{_message_queue}}) {
-		warn "# write ",dump($message);
-		$self->ioloop->write($c, $message);
+			warn "# write ",dump($message);
+			$self->ioloop->write($c, $message);
 		}
 	}
 }
@@ -293,7 +297,7 @@ Encoding used for stored data, defaults to C<UTF-8>.
 
 =head2 C<req>
 
-	$gearman->req( $type, $data );
+	$gearman->req( $type, $data, ..., sub { # callback } );
 
 =head2 C<error>
 
