@@ -65,6 +65,8 @@ sub connect {
 		}
 	);
 
+	warn "# using gearman server $address:$port\n";
+
 	return $self;
 }
 
