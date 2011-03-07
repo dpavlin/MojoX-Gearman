@@ -91,6 +91,7 @@ my $packet_type = {
 	JOB_ASSIGN => 11,
 
 	WORK_COMPLETE => 13,
+	WORK_FAIL => 14,
 
 	ECHO_REQ => 16,
 	ECHO_RES => 17,
@@ -133,9 +134,13 @@ warn "XXX req ",dump(@_);
 		if ( $type == $packet_type->{JOB_CREATED} ) {
 			push @{ $self->{_cb_queue} }, sub {
 				my ( $self,$data ) = @_;
-warn "# WORK_COMPLETE ",dump $data;
 				my ( $type, $handle, $out ) = $self->parse_packet($data);
-				die "not WORK_COMPLETE" unless $type == $packet_type->{WORK_COMPLETE};
+warn "# <<<< ",$nr2type->{$type}, " ",dump $data;
+				if ( $type == $packet_type->{WORK_COMPLETE} ) {
+					warn "WORK_COMPLETE $handle ", dump $out;
+				} elsif ( $type == $packet_type->{WORK_FAIL} ) {
+					warn "WORK_FAIL $handle ", dump $out;
+				}
 				$self->res( $out );
 				$self->stop;
 			};
