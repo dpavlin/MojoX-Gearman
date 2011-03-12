@@ -262,14 +262,28 @@ sub _inform_queue {
 sub _on_read {
 	my ($self, $ioloop, $id, $data) = @_;
 
+	warn "<<<< _on_read ",dump( $id, $data );
+
+	$data = $self->{message}->{$id} .= $data;
+	my ($magic, $type, $len) = unpack( "a4NN", $data );
+
+	if ( length $data < $len ) {
+		warn "# _on_read incomplete message";
+		return;
+	}
+
+	warn "#### data ",dump($data);
+
 	my $cb = shift @{$self->{_cb_queue}};
 	if ($cb) {
-		Mojo::Util::decode($self->encoding, $data) if $data;
+#		Mojo::Util::decode($self->encoding, $data) if $data; # FIXME
 		warn "# on read callback with ", dump($data);
 		$cb->($self, $data);
 	} else {
 		warn "no callback";
 	}
+
+	delete $self->{message}->{$id};
 
 	# Reset error after callback dispatching
 	$self->error(undef);
