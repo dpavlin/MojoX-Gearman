@@ -13,9 +13,11 @@ my $g = new_ok 'MojoX::Gearman';
 ok( my $echo = $g->req( 'ECHO_REQ', "foobar" ), 'ECHO' );
 cmp_ok $echo, 'eq', "foobar";
 
-ok( my $ping = $g->req( 'SUBMIT_JOB', 'ping', '', 'bla' ), 'SUBMIT_JOB' );
-like $ping, qr/pong/, 'got pong';
-diag dump $ping;
+ok( my $workers = $g->req( 'TEXT', 'workers' ), 'workers' );
+diag "workers $workers";
+
+ok( my $status = $g->req( 'TEXT', 'status' ), 'status' );
+diag dump $status;
 
 ok( $g->req( 'ECHO_REQ', "alive" ), 'ECHO - still alive - still alive?' );
 
