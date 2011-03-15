@@ -16,7 +16,7 @@ require Carp;
 __PACKAGE__->attr(server   => '127.0.0.1:4730');
 __PACKAGE__->attr(ioloop   => sub { Mojo::IOLoop->new });
 __PACKAGE__->attr(error	=> undef);
-__PACKAGE__->attr(timeout  => 300);
+__PACKAGE__->attr(timeout  => 5);
 __PACKAGE__->attr(encoding => 'UTF-8');
 __PACKAGE__->attr(
 	on_error => sub {
@@ -137,8 +137,8 @@ warn "XXX req ",dump(@_);
 			return;
 		}
 
-		my ( $type, @data ) = $self->parse_packet($data);
-		warn "# <<<< ", $nr2type->{$type}, " ",dump(@data);
+		my ( $type, $handle, @data ) = $self->parse_packet($data);
+		warn "# <<<< ", $nr2type->{$type}, " $handle ",dump(@data);
 
 		if ( $type == $packet_type->{JOB_CREATED} ) {
 			push @{ $self->{_cb_queue} }, sub {
@@ -153,11 +153,16 @@ warn "# <<<< ",$nr2type->{$type}, " ",dump $data;
 				$self->res( $out );
 				$self->stop;
 			};
+			$self->ioloop->timer( $self->timeout => sub {
+				my $self = shift;
+				warn "TIMEOUT $handle ", $self->timeout, "s for result";
+				$self->stop;
+			});
 		} elsif ( $type == $packet_type->{NO_JOB} ) {
 			$self->req( 'PRE_SLEEP' );
 			$self->stop;
 		} elsif ( $type == $packet_type->{JOB_ASSIGN} ) {
-			my ( $handle, $function, $workload ) = @data;
+			my ( $function, $workload ) = @data;
 			my $callback = $self->{_function}->{$function};
 			die "no $function callback" unless ref $callback eq 'CODE';
 			my $out = $callback->( $workload );
